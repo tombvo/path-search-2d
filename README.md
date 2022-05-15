@@ -6,3 +6,5 @@ To run the program:
 
 - `pip install -r requirements.txt`
 - `python sketch1.py`
+
+![](src/example_img.png)
