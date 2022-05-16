@@ -1,39 +1,28 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""Implementation of 2d_path_search
+"""
+import colorama
 from random import randint
 from rich import print
+from classes import Field
 
 
-import os
-import colorama
+colorama.init()  # On Windows, will filter ANSI escape sequences out of any text sent to stdout or stderr, and replace them with equivalent Win32 calls.
 
-colorama.init()
-os.system("")
-
+# Globals
 board = []
 paths = []
-paths_time = []
+paths_second = []
 
-board_cols = 25
-board_rows = 15
+board_rows: int
+board_cols: int
+
+start_field: Field
+end_field: Field
 
 iteration = 0
-
-
-class Field:
-    def __init__(self, row, col):
-        self.row = row
-        self.col = col
-
-        self.is_obstacle = False
-        self.is_start = False
-        self.is_end = False
-        self.was_searched: bool = False
-        self.best_way = False
-
-    def __repr__(self):
-        return f"{self.row} {self.col}"
-
-    def give_info(self):
-        return f"Row: {self.row}\nCol: {self.col}\nObstacle: {self.is_obstacle}\nStart: {self.is_start}\nEnd: {self.is_end}"
 
 
 def move(x):
@@ -69,9 +58,9 @@ def print_board(board: list):
                 print("[yellow]m[/] ", end="")
 
 
-def define_start_end_obstacles(start_col, end_col):
-    board[0][start_col].is_start = True  # decides starting point
-    board[len(board) - 1][end_col].is_end = True  # decides ending point
+def define_start_end_obstacles(start_field: Field, end_field: Field):
+    board[start_field.row][end_field.row].is_start = True  # decides starting point
+    board[end_field.row][end_field.col].is_end = True  # decides ending point
 
     for t in board:  # implements obstacles
         if t != board[0] and t != board[len(board) - 1]:
@@ -164,7 +153,7 @@ def get_best_way():
 
     var_compare = None
     var_final = None
-    for x in paths_time:
+    for x in paths_second:
         for i in x:
             if end_field.row == i.row and end_field.col == i.col:
                 var_compare = x
@@ -207,12 +196,12 @@ def search_graph():
             if field_test.is_end == True:
                 new_list_top = list(x)
                 new_list_top.append(field_test)
-                paths_time.append(list(new_list_top))
+                paths_second.append(list(new_list_top))
                 cancel = True
 
             new_list_top = list(x)
             new_list_top.append(field_test)
-            paths_time.append(list(new_list_top))
+            paths_second.append(list(new_list_top))
             del new_list_top[:]
 
         field_test = search_right(x[-1])
@@ -220,12 +209,12 @@ def search_graph():
             if field_test.is_end == True:
                 new_list_right = list(x)
                 new_list_right.append(field_test)
-                paths_time.append(list(new_list_right))
+                paths_second.append(list(new_list_right))
                 cancel = True
 
             new_list_right = list(x)
             new_list_right.append(field_test)
-            paths_time.append(list(new_list_right))
+            paths_second.append(list(new_list_right))
             del new_list_right[:]
 
         field_test = search_left(x[-1])
@@ -233,12 +222,12 @@ def search_graph():
             if field_test.is_end == True:
                 new_list_left = list(x)
                 new_list_left.append(field_test)
-                paths_time.append(list(new_list_left))
+                paths_second.append(list(new_list_left))
                 cancel = True
 
             new_list_left = list(x)
             new_list_left.append(field_test)
-            paths_time.append(list(new_list_left))
+            paths_second.append(list(new_list_left))
             del new_list_left[:]
 
         field_test = search_bot(x[-1])
@@ -246,12 +235,12 @@ def search_graph():
             if field_test.is_end == True:
                 new_list_bot = list(x)
                 new_list_bot.append(field_test)
-                paths_time.append(list(new_list_bot))
+                paths_second.append(list(new_list_bot))
                 cancel = True
 
             new_list_bot = list(x)
             new_list_bot.append(field_test)
-            paths_time.append(list(new_list_bot))
+            paths_second.append(list(new_list_bot))
             del new_list_bot[:]
 
         print_board(board)
@@ -261,9 +250,9 @@ def search_graph():
             with open("paths.txt", "a+") as f:
                 f.write(f"Iteration Number: {iteration}\n")
                 f.write(f"Length of paths: {len(paths)}\n")
-                f.write(f"Lenght of pathtime:{len(paths_time)}\n")
+                f.write(f"Lenght of pathtime:{len(paths_second)}\n")
                 f.write(f"Paths:{paths}\n")
-                f.write(f"Pathstime:{paths_time}\n")
+                f.write(f"Pathstime:{paths_second}\n")
 
             if cancel == True:
                 break
@@ -271,20 +260,125 @@ def search_graph():
             iteration += 1
             i = 0
             paths_length = len(paths)
-            for elem in paths_time:
+            for elem in paths_second:
                 paths.append(list(elem))
             del paths[:paths_length]
-            del paths_time[:]
+            del paths_second[:]
             move(board_rows + 1)
         else:
             i += 1
             move(board_rows + 1)
 
 
-print("\033[0J")
-with open("paths.txt", "w") as f:
-    f.write("")
-create_board(board_rows, board_cols)
-define_start_end_obstacles(3, 18)
-search_graph()
-get_best_way()
+def ask_user_start_end():
+
+    global start_field
+    global end_field
+
+    starting_point_row: int
+    starting_point_col: int
+
+    ending_point_row: int
+    ending_point_col: int
+
+    print("Now, please choose the starting point: ")
+    while True:
+        while True:
+            try:
+                starting_point_row = int(input("Row: "))
+                if starting_point_row < 0 or starting_point_row > board_rows:
+                    print(f"Sorry, number has to be in the range from 0-{board_rows}!")
+                    continue
+            except ValueError:
+                print("[red]Make sure you enter a correct, positive Number for rows.")
+                continue
+            break
+
+        while True:
+            try:
+                starting_point_col = int(input("Col: "))
+                if starting_point_col < 0 or starting_point_col > board_cols:
+                    print(f"Sorry, number has to be in the range from 0-{board_cols}!")
+                    continue
+            except ValueError:
+                print(
+                    "[red]Make sure you enter a correct, positive Number for columns."
+                )
+                continue
+            break
+
+        start_field = Field(starting_point_row, starting_point_col)
+
+        print("Now, please choose the ending point: ")
+        while True:
+            try:
+                ending_point_row = int(input("Row: "))
+                if ending_point_row < 0 or ending_point_row > board_rows:
+                    print(f"Sorry, number has to be in the range from 0-{board_rows}!")
+                    continue
+            except ValueError:
+                print("[red]Make sure you enter a correct, positive Number for rows.")
+                continue
+            break
+
+        while True:
+            try:
+                ending_point_col = int(input("Col: "))
+                if ending_point_col < 0 or ending_point_col > board_cols:
+                    print(f"Sorry, number has to be in the range from 0-{board_cols}!")
+                    continue
+            except ValueError:
+                print(
+                    "[red]Make sure you enter a correct, positive Number for columns."
+                )
+                continue
+            break
+
+        end_field = Field(ending_point_row, ending_point_col)
+
+        if start_field.equals(end_field):
+            print(
+                "[red]Ending point cannot equal Starting point's coordinates!\nStart all over again!"
+            )
+        else:
+            break
+
+
+def ask_user_board_size():
+    print("\033[0J")  # erase from cursor until end of screen
+    print(
+        "Hello, this is a 2d-search-path visualization in the terminal.\n You can now decide the size of the board."
+    )
+    rows: str
+    cols: str
+
+    while True:
+        try:
+            rows = int(input("Rows: "))
+        except ValueError:
+            print("[red]Make sure you enter a correct, positive Number for rows.")
+            continue
+        break
+
+    while True:
+        try:
+            cols = int(input("Columns: "))
+        except ValueError:
+            print("[red]Make sure you enter a correct, positive number for columns.")
+            continue
+        break
+
+    global board_rows
+    global board_cols
+
+    board_rows = rows
+    board_cols = cols
+
+
+def main():
+    ask_user_board_size()
+    ask_user_start_end()
+    create_board(board_rows, board_cols)
+    define_start_end_obstacles(start_field, end_field)
+    search_graph()
+    get_best_way()
